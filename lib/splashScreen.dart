@@ -15,10 +15,10 @@ class _SplashScreenState extends State<SplashScreen> {
     // TODO: implement initState
     super.initState();
     Timer(
-      Duration(seconds: 3),
+      const Duration(seconds: 3),
       () => Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => Travel()),
+        MaterialPageRoute(builder: (context) => const Travel()),
       ),
     );
   }
@@ -31,7 +31,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Text(
           'Travenor',
           style: TextStyle(
-              color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
+              color: Colors.white, fontSize: 40, fontWeight: FontWeight.w800),
         ),
       ),
     );
