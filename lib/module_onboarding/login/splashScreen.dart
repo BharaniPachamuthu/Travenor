@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:travenor/main.dart';
+import 'package:travenor/module_onboarding/login/main.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
