@@ -1,6 +1,9 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:flutter_bounceable/flutter_bounceable.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travenor/module_onboarding/login/Signup.dart';
 
 class SignIn extends StatefulWidget {
@@ -11,10 +14,13 @@ class SignIn extends StatefulWidget {
 }
 
 class SignInState extends State<SignIn> {
-  final _formKey = GlobalKey<FormState>();
+  final formKey = GlobalKey<FormState>();
+  FocusNode emailfocusNode = FocusNode();
+  FocusNode passwordfocusNode = FocusNode();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
-  String? emailError;
-  String? passworderror;
+  var obscureText = true.obs;
 
   @override
   Widget build(BuildContext context) {
@@ -24,14 +30,17 @@ class SignInState extends State<SignIn> {
           padding: const EdgeInsets.all(15),
           child: SingleChildScrollView(
             child: Form(
-              key: _formKey,
+              key: formKey,
               child: Column(
-                children: [
+                children: <Widget>[
                   Row(
                     children: [
                       IconButton(
-                        onPressed: () {Navigator.pop(context);},
-                        icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        icon: const Icon(Icons.arrow_back_ios,
+                            color: Colors.black),
                         iconSize: 24,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -55,17 +64,22 @@ class SignInState extends State<SignIn> {
                     ),
                   ),
                   const SizedBox(height: 30),
-                  _buildInputField('Enter your Email', obscureText: false, validator: validateEmail),
-                  if (emailError != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(
-                        emailError!,
-                        style: const TextStyle(color: Colors.red, fontSize: 14),
-                      ),
-                    ),
+                  _buildInputField(
+                    'Enter your Email',
+                    obscureText: false,
+                    validator: validateEmail,
+                    controller: _emailController,
+                    focus: emailfocusNode,
+                  ),
                   const SizedBox(height: 30),
-                  _buildInputField('Enter your password', obscureText: true, validator: validatePassword),
+                  _buildInputField(
+                      'Enter your password',
+                      obscureText: obscureText.value,
+                      validator: validatePassword,
+                      controller: _passwordController,
+                      focus: passwordfocusNode,
+                    ),
+
                   const SizedBox(height: 15),
                   const Align(
                     alignment: Alignment.centerRight,
@@ -95,10 +109,7 @@ class SignInState extends State<SignIn> {
                           text: 'Sign up',
                           recognizer: TapGestureRecognizer()
                             ..onTap = () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => const Signup()));
+                              Get.to(const Signup());
                             },
                           style: const TextStyle(color: Colors.blue),
                         ),
@@ -114,7 +125,7 @@ class SignInState extends State<SignIn> {
                       color: Colors.grey,
                     ),
                   ),
-                  const SizedBox(height: 150),
+                  const SizedBox(height: 120),
                   _buildSocialIcons(),
                 ],
               ),
@@ -125,7 +136,13 @@ class SignInState extends State<SignIn> {
     );
   }
 
-  Widget _buildInputField(String labelText, {bool obscureText = false, String? Function(String?)? validator}) {
+  Widget _buildInputField(
+    String labelText, {
+    required bool obscureText,
+    String? Function(String?)? validator,
+    required TextEditingController controller,
+    required FocusNode focus,
+  }) {
     return Container(
       height: 56.h,
       width: 335.w,
@@ -133,37 +150,55 @@ class SignInState extends State<SignIn> {
         color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(14),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: TextFormField(
-        obscureText: obscureText,
-        validator: validator,
-        decoration: InputDecoration(
-          labelText: labelText,
-          alignLabelWithHint: false,
-          suffixIcon: obscureText ? const Icon(Icons.remove_red_eye) : null,
-          border: InputBorder.none,
+      padding: const EdgeInsets.all(15),
+      child: Center(
+        child: TextFormField(
+            obscureText: obscureText? this.obscureText.value : false,
+            validator: validator,
+            controller: controller,
+            focusNode: focus,
+            decoration: InputDecoration(
+              labelText: labelText,
+              floatingLabelBehavior: FloatingLabelBehavior.never,
+              alignLabelWithHint: true,
+              border: InputBorder.none,
+              suffixIcon: obscureText
+                  ? Obx(
+                      () => IconButton(
+                        onPressed: () {
+                          this.obscureText.value = !this.obscureText.value;
+                        },
+                        icon: Icon(
+                          this.obscureText.value
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                      ),
+                    )
+                  : null,
+
+          ),
         ),
       ),
     );
   }
 
   Widget _buildSignInButton() {
-    return Container(
-      height: 56.h,
-      width: 335.w,
-      decoration: BoxDecoration(
-        color: Colors.blue,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Center(
+    return Bounceable(
+      scaleFactor: 0.7,
+      onTap: () {},
+      child: Container(
+        height: 56.h,
+        width: 335.w,
+        decoration: BoxDecoration(
+          color: Colors.blue,
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: TextButton(
-          onPressed: () {
-            if (_formKey.currentState?.validate() ?? false) {
-
-            }
-          },
+          onPressed: () => _signin(),
           child: const Text(
             'Sign In',
+            textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white, fontSize: 16),
           ),
         ),
@@ -212,5 +247,46 @@ class SignInState extends State<SignIn> {
       return 'Password must be at least 6 characters';
     }
     return null;
+  }
+
+  void _signin() async {
+    if (formKey.currentState!.validate()) {
+      SharedPreferences prefer = await SharedPreferences.getInstance();
+      final registeredUsers = prefer.getStringList('registeredEmails') ?? [];
+      String email = _emailController.text.trim();
+      String password = _passwordController.text.trim();
+      
+
+      
+      if(registeredUsers.contains(email) ) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Signin Successfully!'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.blue,
+        ));
+        Get.to(() => const Signup());
+      }else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Sign In Failed:'),
+          backgroundColor: Colors.red,
+        ));
+      }
+
+
+
+      _emailController.clear();
+      _passwordController.clear();
+      emailfocusNode.unfocus();
+      passwordfocusNode.unfocus();
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    emailfocusNode.dispose();
+    passwordfocusNode.dispose();
+    super.dispose();
   }
 }
