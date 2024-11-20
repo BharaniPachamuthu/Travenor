@@ -2,18 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bounceable/flutter_bounceable.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:travenor/modle/data_view_model.dart';
-import 'package:travenor/modle/onborad_model.dart';
+import 'package:travenor/model/data_view_model.dart';
+import 'package:travenor/model/onborad_model.dart';
 import 'package:travenor/module_onboarding/login/SignIn.dart';
-
 import 'package:travenor/module_onboarding/login/splashScreen.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const Travenor());
+  runApp( const Travenor());
 }
 
 class Travenor extends StatelessWidget {
@@ -31,6 +29,7 @@ class Travenor extends StatelessWidget {
     );
   }
 }
+
 
 class Travel extends StatefulWidget {
   const Travel({super.key});
@@ -65,6 +64,7 @@ class HomePageState extends State<Travel> with SingleTickerProviderStateMixin {
     _pageController.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -171,7 +171,7 @@ class HomePageState extends State<Travel> with SingleTickerProviderStateMixin {
                 },
               ),
             ),
-            SizedBox(height: 20,),
+            const SizedBox(height: 20,),
             SmoothPageIndicator(
               controller: _pageController,
               count: datamodel.onboardmodel.length,
@@ -191,7 +191,6 @@ class HomePageState extends State<Travel> with SingleTickerProviderStateMixin {
                     curve: Curves.easeInOut,
                   );
                 } else {
-                  // Final action on Get Start
                   Get.to(() => const SignIn());
                 }
               },

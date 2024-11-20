@@ -4,8 +4,9 @@ import 'package:get/get.dart';
 import 'package:flutter_bounceable/flutter_bounceable.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:travenor/module_onboarding/login/Demo.dart';
 import 'package:travenor/module_onboarding/login/Signup.dart';
+import 'package:travenor/module_onboarding/login/forgotpassword.dart';
+import '../../module_HomeScreen/home_screen.dart';
 
 class SignIn extends StatefulWidget {
   const SignIn({super.key});
@@ -20,9 +21,18 @@ class SignInState extends State<SignIn> {
   FocusNode passwordfocusNode = FocusNode();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  static const String registeredEmails = 'registeredEmails';
 
   var obscureText = true.obs;
+  var name = ''.obs, email = ''.obs, password = ''.obs;
+  final emailError = ''.obs;
+  final passwordError = ''.obs;
+  final users = <String>[].obs;
+
+  @override
+  void initState() {
+    super.initState();
+    loadUser();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,36 +45,9 @@ class SignInState extends State<SignIn> {
               key: formKey,
               child: Column(
                 children: <Widget>[
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        icon: const Icon(Icons.arrow_back_ios,
-                            color: Colors.black),
-                        iconSize: 24,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        color: Colors.grey,
-                        splashRadius: 24,
-                      ),
-                    ],
-                  ),
+                  _buildBackButton(),
                   const SizedBox(height: 50),
-                  const Text(
-                    'Sign in now',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 26),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Please sign in to continue our app',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w300,
-                      fontSize: 16,
-                      color: Color(0xff7d848d),
-                    ),
-                  ),
+                  _buildHeaderText(),
                   const SizedBox(height: 30),
                   _buildInputField(
                     'Enter your Email',
@@ -72,25 +55,33 @@ class SignInState extends State<SignIn> {
                     validator: validateEmail,
                     controller: _emailController,
                     focus: emailfocusNode,
+                    errorMessage: emailError,
                   ),
                   const SizedBox(height: 30),
-                  _buildInputField(
-                    'Enter your password',
-                    obscureText: obscureText.value,
-                    validator: validatePassword,
-                    controller: _passwordController,
-                    focus: passwordfocusNode,
+                  Obx(
+                    () => _buildInputField(
+                      'Enter your password',
+                      obscureText: obscureText.value,
+                      validator: validatePassword,
+                      controller: _passwordController,
+                      focus: passwordfocusNode,
+                      toggleVisibility: () => obscureText.toggle(),
+                      errorMessage: emailError,
+                    ),
                   ),
                   const SizedBox(height: 15),
-                  const Align(
+                  Align(
                     alignment: Alignment.centerRight,
                     widthFactor: 2.8,
-                    child: Text(
-                      'Forgot password?',
-                      style: TextStyle(
-                        color: Colors.blue,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
+                    child: GestureDetector(
+                      onTap: () => Get.to(const ForgotPassword()),
+                      child: const Text(
+                        'Forgot password?',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
                     ),
                   ),
@@ -126,7 +117,7 @@ class SignInState extends State<SignIn> {
                       color: Colors.grey,
                     ),
                   ),
-                  const SizedBox(height: 120),
+                  const SizedBox(height: 100),
                   _buildSocialIcons(),
                 ],
               ),
@@ -137,42 +128,106 @@ class SignInState extends State<SignIn> {
     );
   }
 
+  Widget _buildBackButton() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+        ),
+        GestureDetector(
+          onTap: () => swtichUser(),
+          child: const CircleAvatar(
+            radius: 25,
+            backgroundColor: Colors.blue,
+            child: Icon(Icons.person_2_rounded),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeaderText() {
+    return const Column(
+      children: [
+        Text(
+          'Sign in now',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 26),
+        ),
+        SizedBox(height: 10),
+        Text(
+          'Please sign in to continue our app',
+          style: TextStyle(
+            fontWeight: FontWeight.w300,
+            fontSize: 16,
+            color: Color(0xff7d848d),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildInputField(
     String labelText, {
     required bool obscureText,
     String? Function(String?)? validator,
     required TextEditingController controller,
     required FocusNode focus,
+    VoidCallback? toggleVisibility,
+    required RxString errorMessage,
   }) {
-    return Container(
-      height: 56.h,
-      width: 335.w,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      padding: const EdgeInsets.all(15),
-      child: Center(
-        child: TextFormField(
-          obscureText: obscureText ? this.obscureText.value : false,
-          validator: validator,
-          controller: controller,
-          focusNode: focus,
-          decoration: InputDecoration(
-            labelText: labelText,
-            floatingLabelBehavior: FloatingLabelBehavior.never,
-            alignLabelWithHint: true,
-            border: InputBorder.none,
-            suffixIcon: obscureText
-                ? IconButton(
-                    onPressed: () => setState(() => this.obscureText.value = !this.obscureText.value),
-                    icon: Icon(
-                        obscureText ? Icons.visibility_off : Icons.visibility),
-                  )
-                : null,
+    return Column(
+      children: [
+        Container(
+          height: 56.h,
+          width: 335.w,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          padding: const EdgeInsets.all(15),
+          child: Center(
+            child: TextFormField(
+              obscureText: obscureText ? this.obscureText.value : false,
+              validator: validator,
+              controller: controller,
+              focusNode: focus,
+              decoration: InputDecoration(
+                labelText: labelText,
+                floatingLabelBehavior: FloatingLabelBehavior.never,
+                alignLabelWithHint: true,
+                border: InputBorder.none,
+                suffixIcon: toggleVisibility != null
+                    ? IconButton(
+                        icon: Icon(
+                          obscureText ? Icons.visibility_off : Icons.visibility,
+                        ),
+                        onPressed: toggleVisibility,
+                      )
+                    : null,
+              ),
+            ),
           ),
         ),
-      ),
+        Obx(
+          () => errorMessage.value.isEmpty
+              ? const SizedBox.shrink()
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10, left: 30),
+                      child: Text(
+                        errorMessage.value,
+                        style: TextStyle(color: Colors.red, fontSize: 14.sp),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ],
     );
   }
 
@@ -221,8 +276,60 @@ class SignInState extends State<SignIn> {
     );
   }
 
-  // Fuctionality
+  Future<dynamic> swtichUser() async {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15.0),
+          ),
+          child: SizedBox(
+            height: 400,
+            width: 300,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const Text(
+                    'Switch User',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: name.value.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.all(5),
+                          child: ListTile(
+                            leading: const CircleAvatar(
+                              radius: 25,
+                              backgroundColor: Colors.blue,
+                              child: Icon(Icons.person_2_rounded),
+                            ),
+                            title: Text(name.value),
+                            subtitle: Text(email.value),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
+  // Fuctionality
   String? validateEmail(String? value) {
     const emailPattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
     final regex = RegExp(emailPattern);
@@ -244,22 +351,30 @@ class SignInState extends State<SignIn> {
   }
 
   void _signin() async {
+    Get.to(() => const HomeScreen());
     if (formKey.currentState!.validate()) {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      final registeredEmails = prefs.getStringList('registeredEmails') ?? [];
-      String emails = _emailController.text.trim();
-      String passwords = _passwordController.text.trim();
+      final prefs = await SharedPreferences.getInstance();
 
-      if (registeredEmails.contains(emails)) {
-        final storedPassword = prefs.getString(emails);
-        if (storedPassword == passwords) {
+      List<String> registeredEmails =
+          prefs.getStringList('registeredEmails') ?? [];
+      email.value = _emailController.text.trim();
+      password.value = _passwordController.text.trim();
+
+
+      if (registeredEmails.contains(email.value)) {
+        final storedPassword = prefs.getString(email.value);
+        name.value = prefs.getString('name')!;
+        if (storedPassword == password.value) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('Signin Successfully!'),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.blue,
           ));
-          // Navigate to another screen
-          Get.to(() => const Demo());
+          Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const HomeScreen(),
+              ));
 
           _emailController.clear();
           _passwordController.clear();
@@ -280,6 +395,13 @@ class SignInState extends State<SignIn> {
         ));
       }
     }
+  }
+
+  void loadUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    name.value = prefs.getString('name') ?? '';
+    email.value = prefs.getString('email') ?? '';
+    password.value = prefs.getString('password') ?? '';
   }
 
   @override
