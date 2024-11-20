@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bounceable/flutter_bounceable.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 
 class Signup extends StatefulWidget {
   const Signup({super.key});
@@ -10,16 +12,24 @@ class Signup extends StatefulWidget {
   _Signupstate createState() => _Signupstate();
 }
 
-
 class _Signupstate extends State<Signup> {
   final formkey = GlobalKey<FormState>();
   final TextEditingController namecontroller = TextEditingController();
   final TextEditingController emailcontroller = TextEditingController();
   final TextEditingController passwordcontroller = TextEditingController();
 
-  late String name, email;
-  late int password;
   var obscureText = false.obs;
+  String? name='',email='',password='';
+
+  @override
+  void initState() {
+    super.initState();
+    // loaduser();
+    WidgetsBinding.instance.addPostFrameCallback((_) => loaduser());
+  }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -63,11 +73,24 @@ class _Signupstate extends State<Signup> {
                   ),
                 ),
                 const SizedBox(height: 30),
-                _buildInputField('Enter your name', obscureText: false),
+                _buildInputField(
+                  'Enter your name',
+                  validator: validateName,
+                  obscureText: false,
+                  controller: namecontroller,
+                ),
                 const SizedBox(height: 30),
-                _buildInputField('Enter your Email', obscureText:  false),
+                _buildInputField(
+                  'Enter your Email',
+                  validator: validateEmail,
+                  obscureText: false,
+                  controller: emailcontroller,
+                ),
                 const SizedBox(height: 30),
-                _buildInputField('Enter your password',obscureText: true),
+                _buildInputField('Enter your password',
+                    validator: validatePassword,
+                    obscureText: true,
+                    controller: passwordcontroller),
                 const SizedBox(height: 50),
                 _buildSignInButton(),
                 const SizedBox(height: 50),
@@ -88,14 +111,15 @@ class _Signupstate extends State<Signup> {
                   ),
                 ),
                 const SizedBox(height: 30),
-                const Text(
-                  'Or connect',
-                  style: TextStyle(
-                    fontSize: 16,
+                Text(
+                  name?.isNotEmpty == true ? name! : 'Empty',
+                  style: const TextStyle(
+                    fontSize: 14,
                     fontWeight: FontWeight.w400,
                     color: Colors.grey,
                   ),
                 ),
+
                 const SizedBox(height: 80),
                 _buildSocialIcons(),
               ],
@@ -106,7 +130,10 @@ class _Signupstate extends State<Signup> {
     ));
   }
 
-    Widget _buildInputField(String labelText, {required bool obscureText}) {
+  Widget _buildInputField(String labelText,
+      {required bool obscureText,
+      String? Function(String?)? validator,
+      required TextEditingController controller}) {
     return Container(
       height: 56.h,
       width: 335.w,
@@ -117,18 +144,18 @@ class _Signupstate extends State<Signup> {
       padding: const EdgeInsets.all(15),
       child: Center(
         child: TextFormField(
-          obscureText: obscureText ? this.obscureText.value : false,
+          obscureText: obscureText,
+          validator: validator,
           decoration: InputDecoration(
             labelText: labelText,
             floatingLabelBehavior: FloatingLabelBehavior.never,
             alignLabelWithHint: true,
-            suffixIcon: obscureText ? Obx(
-                  () => IconButton(
-                onPressed: () {
-                  this.obscureText.value = !this.obscureText.value;
-                },
-                icon: Icon(this.obscureText.value ? Icons.visibility_off : Icons.visibility,),),
-            ): null,
+            suffixIcon: obscureText
+                ? IconButton(
+              onPressed: () => setState(() { obscureText = !obscureText;}),
+              icon: Icon(obscureText ? Icons.visibility_off : Icons.visibility),
+            )
+                : null,
             border: InputBorder.none,
           ),
         ),
@@ -137,17 +164,20 @@ class _Signupstate extends State<Signup> {
   }
 
   Widget _buildSignInButton() {
-    return Container(
-      height: 56.h,
-      width: 335.w,
-      decoration: BoxDecoration(
-        color: Colors.blue,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Center(
-        child: TextButton(
-          onPressed: () => _signup(),
-          child: const Text('Sign up',
+    return Bounceable(
+      onTap: () {
+        _signup();
+      },
+      child: Container(
+        height: 56.h,
+        width: 335.w,
+        decoration: BoxDecoration(
+          color: Colors.blue,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child:  const Center(
+          child: Text('Sign up',
+              textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white, fontSize: 16)),
         ),
       ),
@@ -175,35 +205,78 @@ class _Signupstate extends State<Signup> {
     );
   }
 
+  String? validateName(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Name is required';
+    }
+    return null;
+  }
+
+
+  String? validateEmail(String? value) {
+    const emailPattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+    final regex = RegExp(emailPattern);
+    if (value == null || value.isEmpty) {
+      return 'Email is required';
+    } else if (!regex.hasMatch(value)) {
+      return 'Enter a valid email';
+    }
+    return null;
+  }
+
+
+  String? validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Password is required';
+    } else if (value.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+    return null;
+  }
+
+
   void _signup() async {
     if (formkey.currentState!.validate()) {
       try {
-        name = namecontroller.text.trim();
-        email = emailcontroller.text.trim();
-        password = passwordcontroller.text.trim() as int;
+         name = namecontroller.text.trim();
+         email = emailcontroller.text.trim();
+         password = passwordcontroller.text.trim();
 
+        await saveUser(name!, email!, password!);
 
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Account Created Successfully!'),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.blue,
         ));
-        Get.to(() => const Signup());
-      } catch (e) {
+
+        // Get.to(() => const SignIn());
+      }on Exception catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Sign Up Failed: $e'),
+          behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.red,
         ));
       }
     }
   }
 
-  void getdata() async{
-    SharedPreferences prefer = await SharedPreferences.getInstance();
-    prefer.setString('name', name.toString());
-    prefer.setString('email', email.toString());
-    prefer.setString('password', password.toString());
-    print(name);
+
+  Future<void> saveUser(String name,String email, String password) async {
+    final prefs = await SharedPreferences.getInstance();
+     await prefs.setString('name', name);
+     await prefs.setString('email', email);
+     await prefs.setString('password', password);
+     loaduser();
+  }
+
+  void loaduser() async{
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      name = prefs.getString('name') ?? '';
+      email = prefs.getString('email') ?? '';
+      password = prefs.getString('password') ?? '';
+    });
 
   }
 
@@ -214,5 +287,4 @@ class _Signupstate extends State<Signup> {
     passwordcontroller.dispose();
     super.dispose();
   }
-
 }

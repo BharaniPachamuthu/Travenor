@@ -7,11 +7,12 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:travenor/modle/data_view_model.dart';
 import 'package:travenor/modle/onborad_model.dart';
 import 'package:travenor/module_onboarding/login/SignIn.dart';
+
 import 'package:travenor/module_onboarding/login/splashScreen.dart';
 
-import 'Demo.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const Travenor());
 }
 

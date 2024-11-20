@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:flutter_bounceable/flutter_bounceable.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:travenor/module_onboarding/login/Demo.dart';
 import 'package:travenor/module_onboarding/login/Signup.dart';
 
 class SignIn extends StatefulWidget {
@@ -19,6 +20,7 @@ class SignInState extends State<SignIn> {
   FocusNode passwordfocusNode = FocusNode();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  static const String registeredEmails = 'registeredEmails';
 
   var obscureText = true.obs;
 
@@ -73,13 +75,12 @@ class SignInState extends State<SignIn> {
                   ),
                   const SizedBox(height: 30),
                   _buildInputField(
-                      'Enter your password',
-                      obscureText: obscureText.value,
-                      validator: validatePassword,
-                      controller: _passwordController,
-                      focus: passwordfocusNode,
-                    ),
-
+                    'Enter your password',
+                    obscureText: obscureText.value,
+                    validator: validatePassword,
+                    controller: _passwordController,
+                    focus: passwordfocusNode,
+                  ),
                   const SizedBox(height: 15),
                   const Align(
                     alignment: Alignment.centerRight,
@@ -120,7 +121,7 @@ class SignInState extends State<SignIn> {
                   const Text(
                     'Or connect',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.w400,
                       color: Colors.grey,
                     ),
@@ -153,30 +154,22 @@ class SignInState extends State<SignIn> {
       padding: const EdgeInsets.all(15),
       child: Center(
         child: TextFormField(
-            obscureText: obscureText? this.obscureText.value : false,
-            validator: validator,
-            controller: controller,
-            focusNode: focus,
-            decoration: InputDecoration(
-              labelText: labelText,
-              floatingLabelBehavior: FloatingLabelBehavior.never,
-              alignLabelWithHint: true,
-              border: InputBorder.none,
-              suffixIcon: obscureText
-                  ? Obx(
-                      () => IconButton(
-                        onPressed: () {
-                          this.obscureText.value = !this.obscureText.value;
-                        },
-                        icon: Icon(
-                          this.obscureText.value
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                        ),
-                      ),
-                    )
-                  : null,
-
+          obscureText: obscureText ? this.obscureText.value : false,
+          validator: validator,
+          controller: controller,
+          focusNode: focus,
+          decoration: InputDecoration(
+            labelText: labelText,
+            floatingLabelBehavior: FloatingLabelBehavior.never,
+            alignLabelWithHint: true,
+            border: InputBorder.none,
+            suffixIcon: obscureText
+                ? IconButton(
+                    onPressed: () => setState(() => this.obscureText.value = !this.obscureText.value),
+                    icon: Icon(
+                        obscureText ? Icons.visibility_off : Icons.visibility),
+                  )
+                : null,
           ),
         ),
       ),
@@ -186,7 +179,9 @@ class SignInState extends State<SignIn> {
   Widget _buildSignInButton() {
     return Bounceable(
       scaleFactor: 0.7,
-      onTap: () {},
+      onTap: () {
+        _signin();
+      },
       child: Container(
         height: 56.h,
         width: 335.w,
@@ -194,9 +189,8 @@ class SignInState extends State<SignIn> {
           color: Colors.blue,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: TextButton(
-          onPressed: () => _signin(),
-          child: const Text(
+        child: const Center(
+          child: Text(
             'Sign In',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white, fontSize: 16),
@@ -251,33 +245,40 @@ class SignInState extends State<SignIn> {
 
   void _signin() async {
     if (formKey.currentState!.validate()) {
-      SharedPreferences prefer = await SharedPreferences.getInstance();
-      final registeredUsers = prefer.getStringList('registeredEmails') ?? [];
-      String email = _emailController.text.trim();
-      String password = _passwordController.text.trim();
-      
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final registeredEmails = prefs.getStringList('registeredEmails') ?? [];
+      String emails = _emailController.text.trim();
+      String passwords = _passwordController.text.trim();
 
-      
-      if(registeredUsers.contains(email) ) {
+      if (registeredEmails.contains(emails)) {
+        final storedPassword = prefs.getString(emails);
+        if (storedPassword == passwords) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Signin Successfully!'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.blue,
+          ));
+          // Navigate to another screen
+          Get.to(() => const Demo());
+
+          _emailController.clear();
+          _passwordController.clear();
+          emailfocusNode.unfocus();
+          passwordfocusNode.unfocus();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Invalid password'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red,
+          ));
+        }
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Signin Successfully!'),
+          content: Text('No account found with this email'),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.blue,
-        ));
-        Get.to(() => const Signup());
-      }else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Sign In Failed:'),
           backgroundColor: Colors.red,
         ));
       }
-
-
-
-      _emailController.clear();
-      _passwordController.clear();
-      emailfocusNode.unfocus();
-      passwordfocusNode.unfocus();
     }
   }
 
@@ -287,6 +288,7 @@ class SignInState extends State<SignIn> {
     _passwordController.dispose();
     emailfocusNode.dispose();
     passwordfocusNode.dispose();
+    obscureText.close();
     super.dispose();
   }
 }
