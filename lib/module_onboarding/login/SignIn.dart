@@ -351,7 +351,6 @@ class SignInState extends State<SignIn> {
   }
 
   void _signin() async {
-    Get.to(() => const HomeScreen());
     if (formKey.currentState!.validate()) {
       final prefs = await SharedPreferences.getInstance();
 
